@@ -837,6 +837,7 @@
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/build",
 					/opt/homebrew/opt/libomp/lib,
+					/usr/local/opt/libomp/lib,
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.38;
@@ -903,6 +904,7 @@
 					"$(PROJECT_DIR)",
 					"$(PROJECT_DIR)/build",
 					/opt/homebrew/opt/libomp/lib,
+					/usr/local/opt/libomp/lib,
 				);
 				LLVM_LTO = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;

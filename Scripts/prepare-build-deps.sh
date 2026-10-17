@@ -13,7 +13,7 @@ echo "Configuring libwhisper..."
 cmake -G Xcode -B libwhisper/build -S libwhisper
 
 echo "Vendoring libomp.dylib..."
-LIBOMP="${LIBOMP_PATH:-/opt/homebrew/opt/libomp/lib/libomp.dylib}"
+LIBOMP="${LIBOMP_PATH:-$(brew --prefix)/opt/libomp/lib/libomp.dylib}"
 [ -f "$LIBOMP" ] || { echo "libomp not found at $LIBOMP (brew install libomp)"; exit 1; }
 mkdir -p build
 # rm first: an already-vendored copy is read-only (brew ships 0444), and cp
