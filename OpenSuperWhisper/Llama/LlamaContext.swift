@@ -134,7 +134,12 @@ public final class LlamaContext {
         // --- Load the model ---
         var modelParams = llama_model_default_params()
         // 999 ≈ "offload everything"; llama clamps to the model's actual layer count.
+        // Intel Macs: same AMD/Metal problem as the whisper path; keep cleanup on the CPU.
+        #if arch(x86_64)
+        modelParams.n_gpu_layers = 0
+        #else
         modelParams.n_gpu_layers = gpuLayers
+        #endif
         modelParams.use_mmap = true
 
         let loadedModel = modelPath.withCString { cPath in

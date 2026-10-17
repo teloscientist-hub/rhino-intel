@@ -5,7 +5,13 @@
 import Foundation
 
 public struct WhisperContextParams {
+    // Intel Macs: ggml's Metal backend on discrete AMD GPUs (no simdgroup ops)
+    // returns garbled transcripts and is slower than the CPU. Use the CPU there.
+    #if arch(x86_64)
+    public var useGPU: Bool = false
+    #else
     public var useGPU: Bool = true
+    #endif
     public var flashAttention: Bool = true
     public var gpuDevice: Int32 = 0
     public var dtwTokenTimestamps: Bool = false
