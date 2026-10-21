@@ -18,6 +18,10 @@ final class RecordingContext {
     /// Apple Events permission). Kept as always-nil so history rows written by
     /// older versions still render their stored URLs.
     var fullURL: String? { nil }
+    /// What this recording is for (set by the hotkey that started it) and, for rewrite, the
+    /// text that was selected when it started. See DictationModes.
+    var mode: DictationMode = .dictate
+    var selectedText: String?
     private init() {}
     private var captureID = UUID()
     private let metadataQueue = DispatchQueue(label: "com.noahkagan.rhino.source-metadata", qos: .userInitiated)

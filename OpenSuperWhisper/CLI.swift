@@ -41,7 +41,7 @@ enum CLI {
     /// Returns true if these arguments are a CLI invocation (and the GUI should not launch).
     static func shouldHandle(_ args: [String]) -> Bool {
         guard args.count >= 2 else { return false }
-        return ["transcribe", "bench", "cleanup", "--help", "-h"].contains(args[1])
+        return ["transcribe", "bench", "cleanup", "mode", "--help", "-h"].contains(args[1])
     }
 
     static func run(_ args: [String]) -> Never {
@@ -49,6 +49,7 @@ enum CLI {
             print(usage); exit(0)
         }
         let mode = args[1]
+        if mode == "mode" { runMode(args) }
         guard ["transcribe", "bench", "cleanup"].contains(mode), args.count >= 3 else {
             fail(usage, code: 2)
         }
@@ -194,6 +195,29 @@ enum CLI {
         let data = (try? JSONSerialization.data(withJSONObject: results, options: [.sortedKeys])) ?? Data()
         resultOut.write(data)
         resultOut.write(Data("\n".utf8))
+    }
+
+    /// `Rhino mode prompt|rewrite <spoken text> [--selected <text>]`: run a dictation mode over
+    /// text, no audio. Prints the result and the time it took.
+    private static func runMode(_ args: [String]) -> Never {
+        guard args.count >= 4, let m = DictationMode(rawValue: args[2]), m != .dictate else {
+            fail("usage: Rhino mode prompt|rewrite <spoken text> [--selected <text>]", code: 2)
+        }
+        var selected: String?
+        if let i = args.firstIndex(of: "--selected"), args.indices.contains(i + 1) { selected = args[i + 1] }
+        NSApplication.shared.setActivationPolicy(.prohibited)
+        Task {
+            // --warm: run once untimed first, so the printed time excludes the model load
+            // (in the app the load overlaps the recording; see ShortcutManager's preload).
+            if args.contains("--warm") { _ = await DictationModes.apply(m, spoken: args[3], selected: selected) }
+            let start = CFAbsoluteTimeGetCurrent()
+            let out = await DictationModes.apply(m, spoken: args[3], selected: selected)
+            print(out)
+            FileHandle.standardError.write(Data(String(format: "mode %@: %.0fms\n", m.rawValue,
+                (CFAbsoluteTimeGetCurrent() - start) * 1000).utf8))
+            exit(0)
+        }
+        dispatchMain()
     }
 
     /// The real stdout (engine/library logs are redirected away from it during a run).

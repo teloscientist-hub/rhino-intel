@@ -99,6 +99,13 @@ class ShortcutManager {
             KeyboardShortcuts.onKeyUp(for: slot) { [weak self] in self?.handleKeyUp() }
         }
 
+        // Mode hotkeys: hold, speak, release, like the dictation trigger.
+        for (name, mode) in [(KeyboardShortcuts.Name.promptMode, DictationMode.prompt),
+                             (KeyboardShortcuts.Name.rewriteMode, DictationMode.rewrite)] {
+            KeyboardShortcuts.onKeyDown(for: name) { [weak self] in self?.handleKeyDown(mode: mode) }
+            KeyboardShortcuts.onKeyUp(for: name) { [weak self] in self?.handleKeyUp() }
+        }
+
         KeyboardShortcuts.onKeyUp(for: .escape) { [weak self] in
             Task { @MainActor in
                 // The manager decides by bubble state: while recording this is the cancel
@@ -153,7 +160,7 @@ class ShortcutManager {
         }
     }
 
-    private func handleKeyDown() {
+    private func handleKeyDown(mode: DictationMode = .dictate) {
         holdWorkItem?.cancel()
         holdMode = false
 
@@ -176,6 +183,11 @@ class ShortcutManager {
                 // The first hosted frame needs the current app's icon, too.
                 // Optional title metadata stays on RecordingContext's worker queue.
                 RecordingContext.shared.captureFrontmost()
+                RecordingContext.shared.mode = mode
+                // Read the selection now, while it is still selected and the app still focused.
+                RecordingContext.shared.selectedText =
+                    mode == .rewrite ? DictationModes.selectedTextInFrontmostApp() : nil
+                if mode != .dictate { ModeLlama.shared.preload() }
                 let vm = Diag.measure("IndicatorWindowManager.show") {
                     IndicatorWindowManager.shared.show(nearPoint: cursorPosition, waitForCaret: needsCaret)
                 }

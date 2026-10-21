@@ -156,7 +156,16 @@ public final class LlamaContext {
         var ctxParams = llama_context_default_params()
         ctxParams.n_ctx = contextLength
         ctxParams.n_batch = contextLength
-        let cpuCount = Int32(max(1, ProcessInfo.processInfo.activeProcessorCount))
+        var cpuCount = Int32(max(1, ProcessInfo.processInfo.activeProcessorCount))
+        #if arch(x86_64)
+        // Intel: hyperthreads hurt here. llama-bench on a 16-core/32-thread Xeon W-3245 measured
+        // generation fastest at 16 threads, and 32 contends with the rest of the system.
+        var physical: Int32 = 0
+        var size = MemoryLayout<Int32>.size
+        if sysctlbyname("hw.physicalcpu", &physical, &size, nil, 0) == 0, physical > 0 {
+            cpuCount = physical
+        }
+        #endif
         ctxParams.n_threads = cpuCount
         ctxParams.n_threads_batch = cpuCount
 

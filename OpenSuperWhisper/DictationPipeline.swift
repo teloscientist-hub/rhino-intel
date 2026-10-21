@@ -22,6 +22,8 @@ final class DictationPipeline: ObservableObject {
         var bundleID: String? = nil
         var windowTitle: String? = nil
         var fullURL: String? = nil
+        var mode: DictationMode = .dictate
+        var selectedText: String? = nil
     }
 
     private struct PendingDictation {
@@ -193,6 +195,13 @@ final class DictationPipeline: ObservableObject {
             // The cleanup model doesn't know the user's spellings and can undo them, so the
             // dictionary gets the last word. (A no-op pass when cleanup is off.)
             text = settings.applyCustomDictionary(text, afterCleanup: true)
+
+            // Prompt / rewrite modes (DictationModes): the hotkey that started this recording
+            // decides. Falls back to the dictation itself on any failure.
+            if item.context.mode != .dictate, !text.isEmpty {
+                text = await DictationModes.apply(item.context.mode, spoken: text,
+                                                  selected: item.context.selectedText)
+            }
 
             // Trailing "press enter" voice command (opt-in): strip it and remember to press Return
             // after insertion, submitting the message/prompt.
