@@ -196,7 +196,12 @@ class IndicatorViewModel: ObservableObject {
     }
 
     static var shouldUseLiveStreaming: Bool {
-        AppPreferences.shared.liveTranscriptionEnabled && AppPreferences.shared.selectedEngine == "fluidaudio"
+        #if arch(x86_64)
+        // Live preview streams through FluidAudio (CoreML), which crashes on Intel Macs.
+        return false
+        #else
+        return AppPreferences.shared.liveTranscriptionEnabled && AppPreferences.shared.selectedEngine == "fluidaudio"
+        #endif
     }
 
     /// Real duration of a saved audio file, in seconds (0 if it can't be read).

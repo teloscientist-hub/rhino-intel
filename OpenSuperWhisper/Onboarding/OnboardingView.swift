@@ -116,6 +116,9 @@ class OnboardingViewModel: ObservableObject {
     }
     
     func isFluidAudioModelDownloaded(version: String) -> Bool {
+        #if arch(x86_64)
+        return SherpaParakeetModels.directoryIfPresent(version: version) != nil
+        #endif
         let asrVersion: AsrModelVersion = version == "v2" ? .v2 : .v3
         let cacheDirectory = AsrModels.defaultCacheDirectory(for: asrVersion)
         return AsrModels.modelsExist(at: cacheDirectory, version: asrVersion)
@@ -249,6 +252,18 @@ class OnboardingViewModel: ObservableObject {
                     throw CancellationError()
                 }
                 
+#if arch(x86_64)
+                // Intel: Parakeet runs through sherpa-onnx (SherpaParakeetEngine); fetch its ONNX model.
+                try await SherpaParakeetModels.download(version: version) { [weak self] fraction in
+                    Task { @MainActor [weak self] in
+                        guard let self, self.isDownloading else { return }
+                        self.downloadProgress = fraction
+                        if let index = self.unifiedModels.firstIndex(where: { $0.id == model.id }) {
+                            self.unifiedModels[index].downloadProgress = fraction
+                        }
+                    }
+                }
+#else
                 let models = try await AsrModels.downloadAndLoad(version: asrVersion) { [weak self] progress in
                     Task { @MainActor [weak self] in
                         guard let self, self.isDownloading else { return }
@@ -280,6 +295,7 @@ class OnboardingViewModel: ObservableObject {
                 await MainActor.run { downloadPhaseText = "Loading model…" }
                 let manager = AsrManager(config: .default)
                 try await manager.loadModels(models)
+#endif
 
                 await MainActor.run {
                     if let index = unifiedModels.firstIndex(where: { $0.id == model.id }) {

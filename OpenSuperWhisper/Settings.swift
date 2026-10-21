@@ -506,6 +506,9 @@ class SettingsViewModel: ObservableObject {
     }
     
     func isFluidAudioModelDownloaded(version: String) -> Bool {
+        #if arch(x86_64)
+        return SherpaParakeetModels.directoryIfPresent(version: version) != nil
+        #endif
         let asrVersion: AsrModelVersion = version == "v2" ? .v2 : .v3
         
         // Используем правильный путь к кэшу согласно документации:
@@ -665,6 +668,18 @@ class SettingsViewModel: ObservableObject {
                     throw CancellationError()
                 }
                 
+#if arch(x86_64)
+                // Intel: Parakeet runs through sherpa-onnx (SherpaParakeetEngine); fetch its ONNX model.
+                try await SherpaParakeetModels.download(version: model.version) { [weak self] fraction in
+                    Task { @MainActor [weak self] in
+                        guard let self, self.isDownloading else { return }
+                        self.downloadProgress = fraction
+                        if let index = self.downloadableFluidAudioModels.firstIndex(where: { $0.id == model.id }) {
+                            self.downloadableFluidAudioModels[index].downloadProgress = fraction
+                        }
+                    }
+                }
+#else
                 let models = try await AsrModels.downloadAndLoad(version: version) { [weak self] progress in
                     Task { @MainActor [weak self] in
                         guard let self, self.isDownloading else { return }
@@ -696,6 +711,7 @@ class SettingsViewModel: ObservableObject {
                 await MainActor.run { downloadPhaseText = "Loading model…" }
                 let manager = AsrManager(config: .default)
                 try await manager.loadModels(models)
+#endif
                 
                 await MainActor.run {
                     if let index = downloadableFluidAudioModels.firstIndex(where: { $0.id == model.id }) {

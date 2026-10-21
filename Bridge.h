@@ -12,5 +12,8 @@
 // break every Clang module build ("'optional' file not found"). llama.h's own ggml includes
 // resolve from whisper.cpp's ggml headers, which are the shared ggml.
 #include "llama.h"
+// sherpa-onnx C API (Parakeet on Intel Macs, see SherpaParakeetEngine.swift). Types only; the
+// library itself is dlopen-ed at runtime.
+#include "libsherpa/include/sherpa-onnx/c-api/c-api.h"
 // Objective-C exception guard for AVFoundation calls that can raise (installTap).
 #include "OpenSuperWhisper/Utils/ObjCExceptionCatcher.h"

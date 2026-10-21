@@ -71,7 +71,11 @@ class TranscriptionService: ObservableObject {
             let engine: TranscriptionEngine?
 
             if selectedEngine == "fluidaudio" {
+                #if arch(x86_64)
+                engine = SherpaParakeetEngine()
+                #else
                 engine = await FluidAudioEngine()
+                #endif
             } else {
                 engine = await WhisperEngine()
             }
