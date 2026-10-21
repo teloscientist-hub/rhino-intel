@@ -15,7 +15,7 @@ fi
 
 # Build the app
 echo "Building Rhino..."
-BUILD_OUTPUT=$(xcodebuild -scheme OpenSuperWhisper -configuration Debug -jobs 8 -derivedDataPath build -quiet -destination "platform=macOS,arch=$(uname -m)" -skipPackagePluginValidation -skipMacroValidation -UseModernBuildSystem=YES -clonedSourcePackagesDirPath SourcePackages -skipUnavailableActions CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO OTHER_CODE_SIGN_FLAGS="--entitlements OpenSuperWhisper/OpenSuperWhisper.entitlements" build 2>&1)
+BUILD_OUTPUT=$(xcodebuild -scheme OpenSuperWhisper -configuration Debug -jobs 8 -derivedDataPath build -quiet -destination "platform=macOS,arch=$(uname -m)" -skipPackagePluginValidation -skipMacroValidation -UseModernBuildSystem=YES -clonedSourcePackagesDirPath SourcePackages -skipUnavailableActions CLANG_ENABLE_CODE_COVERAGE=NO CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" CODE_SIGNING_REQUIRED=NO OTHER_CODE_SIGN_FLAGS="--entitlements OpenSuperWhisper/OpenSuperWhisper.entitlements" build 2>&1)
 
 # sudo gem install xcpretty
 if command -v xcpretty &> /dev/null
@@ -29,6 +29,7 @@ fi
 if [[ $? -eq 0 ]] && [[ ! "$BUILD_OUTPUT" =~ "BUILD FAILED" ]]; then
     echo "Building successful!"
     cp CHANGELOG.md ./Build/Build/Products/Debug/Rhino.app/Contents/Resources/CHANGELOG.md
+    "$(dirname "$0")/Scripts/vendor-sherpa.sh" "./Build/Build/Products/Debug/Rhino.app"
     # Re-sign with a stable identity so macOS keeps granted TCC permissions
     # across rebuilds (no-op / ad-hoc fallback when no identity is available).
     "$(dirname "$0")/Scripts/dev-codesign.sh" "./Build/Build/Products/Debug/Rhino.app" || true

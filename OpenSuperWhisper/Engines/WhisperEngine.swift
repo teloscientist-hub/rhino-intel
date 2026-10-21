@@ -493,6 +493,23 @@ class WhisperEngine: TranscriptionEngine {
             
             let sourceRate = sourceFormat.sampleRate
             let targetRate = targetFormat.sampleRate
+
+            // Already at the target rate (every dictation: AudioRecorder writes 16 kHz).
+            // Read the samples directly. Running them through AVAudioConverter at 1:1
+            // corrupted ~25% of samples in 1404-sample blocks and never flushed its tail
+            // (seen on an Intel Mac Pro: VAD then dropped real speech).
+            if sourceRate == targetRate {
+                let frames = AVAudioFrameCount(totalFrames)
+                guard frames > 0,
+                      let buffer = AVAudioPCMBuffer(pcmFormat: sourceFormat, frameCapacity: frames) else {
+                    return nil
+                }
+                try audioFile.read(into: buffer, frameCount: frames)
+                var samples = [Float]()
+                samples.reserveCapacity(Int(buffer.frameLength))
+                self.appendMixedSamples(from: buffer, to: &samples)
+                return samples.isEmpty ? nil : samples
+            }
             let ratio = targetRate / sourceRate
             
             // Use parallel processing for large files (> 10 seconds of audio)

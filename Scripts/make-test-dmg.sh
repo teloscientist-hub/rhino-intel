@@ -41,7 +41,7 @@ echo "== build deps (fresh-checkout safe; idempotent on a dev machine)"
 ./Scripts/prepare-build-deps.sh
 
 echo "== release build"
-xcodebuild -scheme OpenSuperWhisper -configuration Release -derivedDataPath build \
+xcodebuild -scheme OpenSuperWhisper -configuration Release CLANG_ENABLE_CODE_COVERAGE=NO -derivedDataPath build \
   -clonedSourcePackagesDirPath SourcePackages -destination 'platform=macOS,arch=arm64' \
   -skipPackagePluginValidation -skipMacroValidation -quiet \
   CODE_SIGNING_ALLOWED=NO build
